@@ -2,6 +2,10 @@
 
 An interactive 3D geometry visualisation tool designed to help students and teachers explore and understand regular polyhedra.
 
+## Live Demo
+
+[Open Polyhedron Explorer](https://nina1060723.github.io/Polyhedron_explorer/)
+
 ## 1. Project Overview
 
 Polyhedron Explorer allows users to interact with three-dimensional geometric models, examine their properties, and explore their structures from different perspectives.
