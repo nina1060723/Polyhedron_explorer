@@ -256,19 +256,19 @@ renderer.domElement.addEventListener('pointerdown',ev=>{
  mouseNDC(ev);
  if(mode==='erase'){
   const hits=pickRay.intersectObjects(measuringGroup.children,false);
-  if(hits.length){const r=hits[0].object.userData.record;const index=records.indexOf(r);if(index>=0){records.splice(index,1);storeUndo(()=>records.splice(Math.min(index,records.length),0,r));refreshMeasurements()};ev.stopPropagation()}
+  if(hits.length){const r=hits[0].object.userData.record;const index=records.indexOf(r);if(index>=0){records.splice(index,1);storeUndo(()=>records.splice(Math.min(index,records.length),0,r));refreshMeasurements()};ev.stopImmediatePropagation()}
   return;
  }
  const i=nearestHandle();if(i===null)return;
  if(mode==='measure'){
   if(pending===null)pending=i;
   else if(pending!==i){const r={a:pending,b:i};records.push(r);storeUndo(()=>{records=records.filter(x=>x!==r)});pending=null;refreshMeasurements()}
-  ev.stopPropagation();return;
+  ev.stopImmediatePropagation();return;
  }
  if(mode==='editVertex'){
   const start=uniqueVertices[i].clone(),normal=new THREE.Vector3();camera.getWorldDirection(normal);
-  drag={i,start,plane:new THREE.Plane().setFromNormalAndCoplanarPoint(normal,start)};
-  controls.enabled=false;renderer.domElement.setPointerCapture(ev.pointerId);ev.stopPropagation();
+  drag={i,start,wasDeformed:deformed,plane:new THREE.Plane().setFromNormalAndCoplanarPoint(normal,start)};
+  controls.enabled=false;renderer.domElement.setPointerCapture(ev.pointerId);ev.stopImmediatePropagation();
  }
 },true);
 renderer.domElement.addEventListener('pointermove',ev=>{
@@ -285,7 +285,7 @@ renderer.domElement.addEventListener('pointermove',ev=>{
 function stopDrag(){
  if(!drag)return;
  const i=drag.i,old=drag.start.clone();
- if(!old.equals(uniqueVertices[i]))storeUndo(()=>{uniqueVertices[i].copy(old);updateDeformedGeometry()});
+ if(!old.equals(uniqueVertices[i])){const wasDeformed=drag.wasDeformed;storeUndo(()=>{uniqueVertices[i].copy(old);updateDeformedGeometry();deformed=wasDeformed;showFormulas(Number($('shape').value))})}
  drag=null;controls.enabled=true;
 }
 renderer.domElement.addEventListener('pointerup',stopDrag);renderer.domElement.addEventListener('pointercancel',stopDrag);
