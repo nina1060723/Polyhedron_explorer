@@ -4,12 +4,36 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Polyhedron Explorer | 3D Geometry Demo</title>
 <style>
-:root{font-family:Inter,system-ui,'Noto Sans TC',sans-serif;color:#edf2ff;background:#0b1020}*{box-sizing:border-box}body{margin:0}header{padding:20px 26px;border-bottom:1px solid #29344b;display:flex;justify-content:space-between;gap:10px;align-items:center}header h1{font-size:21px;margin:0}header small{color:#a7b4ce}.layout{display:grid;grid-template-columns:290px minmax(0,1fr) 255px;height:calc(100vh - 76px);min-height:500px}aside{padding:22px;background:#121a2d}aside.left{border-right:1px solid #29344b}aside.right{border-left:1px solid #29344b}h2{font-size:15px;margin:0 0 20px;color:#c9d5ef}label{display:block;font-size:13px;color:#b8c7e1;margin:18px 0 7px}select,input[type=number],button{width:100%;padding:12px;border:1px solid #3b4b68;border-radius:9px;background:#202c45;color:white;font-size:14px}button{cursor:pointer;margin-top:14px;background:#3468e8;border-color:#3468e8;font-weight:600}button:hover{background:#4a7df7}input[type=checkbox]{accent-color:#5a85ff} .check{display:flex;align-items:center;gap:9px;margin:18px 0;color:#d7e1f7;font-size:14px}.check input{width:16px;height:16px}#viewport{position:relative;overflow:hidden;background:radial-gradient(circle at center,#202d49 0%,#0b1020 76%)}#viewport canvas{display:block}#labels{position:absolute;inset:0;pointer-events:none}.point-label{position:absolute;transform:translate(-50%,-50%);font-size:12px;color:#fff;background:#18294ddc;border:1px solid #8ca7e4;border-radius:5px;padding:2px 5px}.hint{position:absolute;left:20px;bottom:16px;color:#c6d2e8;font-size:12px;pointer-events:none}.stat{padding:14px 0;border-bottom:1px solid #2b3850}.stat span{display:block;color:#a8b7d1;font-size:12px;margin-bottom:6px}.stat strong{font-size:20px;font-weight:600}.note{font-size:12px;color:#9cacc9;line-height:1.6;margin-top:24px}.badge{background:#193d36;color:#8be5c2;padding:6px 10px;border-radius:20px;font-size:11px}@media(max-width:850px){.layout{grid-template-columns:1fr;height:auto}aside.left,aside.right{border:0}#viewport{height:55vh;min-height:380px}.layout aside.right{display:grid;grid-template-columns:repeat(2,1fr);gap:0 20px}header{padding:14px}}
+:root{font-family:Inter,system-ui,'Noto Sans TC',sans-serif;color:#edf2ff;background:#0b1020}*{box-sizing:border-box}body{margin:0}header{padding:20px 26px;border-bottom:1px solid #29344b;display:flex;justify-content:space-between;gap:10px;align-items:center}header h1{font-size:21px;margin:0}header small{color:#a7b4ce}.layout{display:grid;grid-template-columns:290px minmax(0,1fr) 255px;height:calc(100vh - 76px);min-height:500px}aside{padding:22px;background:#121a2d}aside.left{border-right:1px solid #29344b}aside.right{border-left:1px solid #29344b}h2{font-size:15px;margin:0 0 20px;color:#c9d5ef}label{display:block;font-size:13px;color:#b8c7e1;margin:18px 0 7px}select,input[type=number],button{width:100%;padding:12px;border:1px solid #3b4b68;border-radius:9px;background:#202c45;color:white;font-size:14px}button{cursor:pointer;margin-top:14px;background:#3468e8;border-color:#3468e8;font-weight:600}button:hover{background:#4a7df7}input[type=checkbox]{accent-color:#5a85ff} .check{display:flex;align-items:center;gap:9px;margin:18px 0;color:#d7e1f7;font-size:14px}.check input{width:16px;height:16px}#viewport{position:relative;overflow:hidden;background:radial-gradient(circle at center,#202d49 0%,#0b1020 76%)}#viewport canvas{display:block}#labels{position:absolute;inset:0;pointer-events:none}.point-label{position:absolute;transform:translate(-50%,-50%);font-size:12px;color:#fff;background:#18294ddc;border:1px solid #8ca7e4;border-radius:5px;padding:2px 5px}#scale-bar {
+  position: absolute;
+  left: 20px;
+  bottom: 55px;
+  z-index: 10;
+  pointer-events: none;
+  color: #e2edff;
+  font-size: 12px;
+}
+
+#scale-label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+#scale-line {
+  width: 100px;
+  height: 12px;
+  border-left: 2px solid #e2edff;
+  border-right: 2px solid #e2edff;
+  border-bottom: 2px solid #e2edff;
+}.hint{position:absolute;left:20px;bottom:16px;color:#c6d2e8;font-size:12px;pointer-events:none}.stat{padding:14px 0;border-bottom:1px solid #2b3850}.stat span{display:block;color:#a8b7d1;font-size:12px;margin-bottom:6px}.stat strong{font-size:20px;font-weight:600}.note{font-size:12px;color:#9cacc9;line-height:1.6;margin-top:24px}.badge{background:#193d36;color:#8be5c2;padding:6px 10px;border-radius:20px;font-size:11px}@media(max-width:850px){.layout{grid-template-columns:1fr;height:auto}aside.left,aside.right{border:0}#viewport{height:55vh;min-height:380px}.layout aside.right{display:grid;grid-template-columns:repeat(2,1fr);gap:0 20px}header{padding:14px}}
 </style>
 </head>
 <body>
 <header><div><h1>Polyhedron Explorer</h1><small>Interactive 3D Geometry — Prototype</small></div><span class="badge">3D Demo</span></header>
-<div class="layout"><aside class="left"><h2>Model Controls / Controls</h2><label for="shape">Polyhedron / Polyhedron</label><select id="shape"><option value="4">4 faces — Tetrahedron</option><option value="6" selected>6 faces — Cube</option><option value="8">8 faces — Octahedron</option><option value="12">12 faces — Dodecahedron</option><option value="20">20 faces — Icosahedron</option></select><label for="edge">Edge Length(cm) </label><input type="number" id="edge" min="0.001" step="0.1" value="2"><div id="error" style="color:#ff9d9d;font-size:12px;margin-top:8px;min-height:16px"></div><label class="check"><input type="checkbox" id="wire"> Wireframe </label><label class="check"><input type="checkbox" id="vertices"> Show Vertex Labels </label><button id="reset">Reset View </button><p class="note">Left-drag: Rotate <br>Scroll: Zoom <br>Right-drag: Pan <br><br>This version provides interactive 3D visualisation. The C++ command-line program is a separate component and is not yet integrated with the web application.</p></aside><main id="viewport"><div id="labels"></div><div class="hint">Drag to rotate · Scroll to zoom · Right-click to pan</div></main><aside class="right"><h2>Geometry Properties</h2><div class="stat"><span>Polyhedron</span><strong id="name">Cube</strong></div><div class="stat"><span>Faces</span><strong id="faces">6</strong></div><div class="stat"><span>Edges</span><strong id="edges">12</strong></div><div class="stat"><span>Vertices</span><strong id="points">8</strong></div><div class="stat"><span>Surface area</span><strong id="area">24.000 cm²</strong></div><div class="stat"><span>Volume</span><strong id="volume">8.000 cm³</strong></div></aside></div>
+<div class="layout"><aside class="left"><h2>Model Controls / Controls</h2><label for="shape">Polyhedron / Polyhedron</label><select id="shape"><option value="4">4 faces — Tetrahedron</option><option value="6" selected>6 faces — Cube</option><option value="8">8 faces — Octahedron</option><option value="12">12 faces — Dodecahedron</option><option value="20">20 faces — Icosahedron</option></select><label for="edge">Edge Length(cm) </label><input type="number" id="edge" min="0.001" step="0.1" value="2"><div id="error" style="color:#ff9d9d;font-size:12px;margin-top:8px;min-height:16px"></div><label class="check"><input type="checkbox" id="wire"> Wireframe </label><label class="check"><input type="checkbox" id="vertices"> Show Vertex Labels </label><button id="reset">Reset View </button><p class="note">Left-drag: Rotate <br>Scroll: Zoom <br>Right-drag: Pan <br><br>This version provides interactive 3D visualisation. The C++ command-line program is a separate component and is not yet integrated with the web application.</p></aside><main id="viewport"><div id="labels"></div><div id="scale-bar">
+  <span id="scale-label">-- cm</span>
+  <div id="scale-line"></div>
+</div><div class="hint">Drag to rotate · Scroll to zoom · Right-click to pan</div></main><aside class="right"><h2>Geometry Properties</h2><div class="stat"><span>Polyhedron</span><strong id="name">Cube</strong></div><div class="stat"><span>Faces</span><strong id="faces">6</strong></div><div class="stat"><span>Edges</span><strong id="edges">12</strong></div><div class="stat"><span>Vertices</span><strong id="points">8</strong></div><div class="stat"><span>Surface area</span><strong id="area">24.000 cm²</strong></div><div class="stat"><span>Volume</span><strong id="volume">8.000 cm³</strong></div></aside></div>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"}}
 </script>
@@ -37,6 +61,30 @@ function updateLabels(){const show=$('vertices').checked;const rect=viewport.get
 function reset(){const radius=Math.max(1,Number($('edge').value)||2);camera.position.set(radius*2.5,radius*2,radius*3);controls.target.set(0,0,0);controls.update()}
 $('shape').addEventListener('change',()=>{update();reset()});$('edge').addEventListener('input',()=>{if(Number($('edge').value)>0)update();else $('error').textContent='Edge length must be positive.'});$('wire').addEventListener('change',()=>{if(solid)solid.visible=!$('wire').checked});$('vertices').addEventListener('change',updateLabels);$('reset').addEventListener('click',reset);
 new ResizeObserver(()=>{const w=viewport.clientWidth,h=viewport.clientHeight;if(!w||!h)return;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h)}).observe(viewport);
-function loop(){requestAnimationFrame(loop);controls.update();updateLabels();renderer.render(scene,camera)}update();reset();loop();
+function updateScaleBar() {
+  const scaleWidth = 100; // Fixed width in pixels
+  const distance = camera.position.distanceTo(controls.target);
+
+  // Perspective camera: visible height at the model centre
+  const fovRadians = THREE.MathUtils.degToRad(camera.fov);
+  const visibleHeight = 2 * distance * Math.tan(fovRadians / 2);
+
+  // Convert 100 screen pixels into centimetres
+  const cmPerPixel = visibleHeight / viewport.clientHeight;
+  const scaleLength = scaleWidth * cmPerPixel;
+
+  // Display the calculated length
+  $('scale-label').textContent = scaleLength.toFixed(2) + ' cm';
+}function loop() {
+  requestAnimationFrame(loop);
+  controls.update();
+  updateLabels();
+  updateScaleBar();
+  renderer.render(scene, camera);
+}
+
+update();
+reset();
+loop();
 </script>
 </body></html>
