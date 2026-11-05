@@ -89,13 +89,6 @@ function updateLabels() {
       raycaster.far = distance - 0.000001;
 
       const intersections = raycaster.intersectObject(solid, false);
-      if (i === 0) {
-      console.log('Vertex A:', {
-        distance,
-        intersections: intersections.length,
-        firstHit: intersections[0]?.distance
-      });
-    }
 
       if (intersections.length > 0) {
         visible = false;
