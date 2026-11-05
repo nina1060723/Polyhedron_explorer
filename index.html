@@ -106,7 +106,29 @@ function updateLabels() {
   });
 }
 
-function reset(){const radius=Math.max(1,Number($('edge').value)||2);camera.position.set(radius*2.5,radius*2,radius*3);controls.target.set(0,0,0);controls.update()}
+
+function reset() {
+  const edgeLength = Math.max(1, Number($('edge').value) || 2);
+  const shape = Number($('shape').value);
+
+  // Keep the existing camera distance for other shapes
+  let distanceMultiplier = 1;
+
+  // Give the icosahedron more space in the viewport
+  if (shape === 20) {
+    distanceMultiplier = 1.5;
+  }
+
+  camera.position.set(
+    edgeLength * 2.5 * distanceMultiplier,
+    edgeLength * 2 * distanceMultiplier,
+    edgeLength * 3 * distanceMultiplier
+  );
+
+  controls.target.set(0, 0, 0);
+  controls.update();
+}
+
 $('shape').addEventListener('change',()=>{update();reset()});$('edge').addEventListener('input',()=>{if(Number($('edge').value)>0)update();else $('error').textContent='Edge length must be positive.'});$('wire').addEventListener('change',()=>{if(solid)solid.visible=!$('wire').checked});$('vertices').addEventListener('change',updateLabels);$('reset').addEventListener('click',reset);
 new ResizeObserver(()=>{const w=viewport.clientWidth,h=viewport.clientHeight;if(!w||!h)return;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h)}).observe(viewport);
 function updateScaleBar() {
