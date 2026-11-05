@@ -161,7 +161,7 @@ function updateScaleBar() {
   controls.update();
   updateLabels();
   updateScaleBar();
-  updateMeasurementLabels();
+  updateMeasurementLabels();updateGlow();
   renderer.render(scene, camera);
 }
 
@@ -212,20 +212,39 @@ function mouseNDC(ev){
  pickRay.setFromCamera(pointer,camera);
 }
 function makeMeasurement(r){
- const p=uniqueVertices[r.a],q=uniqueVertices[r.b],length=p.distanceTo(q);
- const direction=q.clone().sub(p);const mesh=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,1,8),new THREE.MeshBasicMaterial({color:0x76f2dc,depthTest:false,transparent:true,opacity:.94}));
- mesh.scale.setScalar(1);mesh.scale.y=length;mesh.position.copy(p).add(q).multiplyScalar(.5);
- mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction.normalize());
- mesh.userData.record=r;mesh.renderOrder=20;measuringGroup.add(mesh);r.mesh=mesh;
- const label=document.createElement('div');label.className='distance-label';label.textContent=length.toFixed(3)+' cm';viewport.append(label);r.label=label;
+ const p=uniqueVertices[r.a],q=uniqueVertices[r.b];const path=r.kind==='surface'?surfacePath(r.a,r.b):[p.clone(),q.clone()];r.path=path;const length=path.reduce((d,v,i)=>d+(i?v.distanceTo(path[i-1]):0),0);
+ const group=new THREE.Group();group.userData.record=r;
+ for(let j=1;j<path.length;j++){
+  const from=path[j-1],to=path[j],delta=to.clone().sub(from),distance=delta.length();
+  if(distance<1e-8)continue;
+  const orientation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),delta.clone().normalize());
+  for(const glow of [true,false]){
+   const mesh=new THREE.Mesh(new THREE.CylinderGeometry(glow?.05:.014,glow?.05:.014,1,10),new THREE.MeshBasicMaterial({color:glow?0x4cbfff:0xb5fff2,transparent:true,opacity:glow?.1:.95,depthTest:false,depthWrite:false,blending:glow?THREE.AdditiveBlending:THREE.NormalBlending}));
+   mesh.scale.y=distance;mesh.position.copy(from).add(to).multiplyScalar(.5);mesh.quaternion.copy(orientation);mesh.renderOrder=glow?19:20;mesh.userData.record=r;mesh.userData.glow=glow;group.add(mesh);
+  }
+ }
+ measuringGroup.add(group);r.mesh=group;
+ const label=document.createElement('div');label.className='distance-label';label.textContent=(r.kind==='surface'?'Surface ≈ ':'Direct ')+length.toFixed(3)+' cm';viewport.append(label);r.label=label;
 }
 function refreshMeasurements(){
- for(const obj of [...measuringGroup.children]){measuringGroup.remove(obj);obj.geometry.dispose();obj.material.dispose()}
+ for(const obj of [...measuringGroup.children]){measuringGroup.remove(obj);obj.traverse(o=>{if(o.isMesh){o.geometry.dispose();o.material.dispose()}})}
  for(const el of viewport.querySelectorAll('.distance-label'))el.remove();
  for(const r of records)makeMeasurement(r);
 }
+function updateGlow(){
+ const phase=performance.now()*.004;
+ for(const group of measuringGroup.children){
+  const hovered=group.userData.hovered;
+  for(const mesh of group.children){
+   const glow=mesh.userData.glow;
+   mesh.scale.x=mesh.scale.z=hovered?(glow?1.8:1.3):1;
+   mesh.material.opacity=glow?(hovered?.22+.08*Math.sin(phase):.1):hovered?1:.95;
+   mesh.material.color.setHex(hovered?(glow?0x9ae8ff:0xffffff):(glow?0x4cbfff:0xb5fff2));
+  }
+ }
+}
 function updateMeasurementLabels(){
- for(const r of records){if(!r.label)continue;const mid=uniqueVertices[r.a].clone().add(uniqueVertices[r.b]).multiplyScalar(.5).project(camera);r.label.style.left=(mid.x*.5+.5)*viewport.clientWidth+'px';r.label.style.top=(-mid.y*.5+.5)*viewport.clientHeight+'px';r.label.style.display=mid.z<1&&mid.z>-1?'block':'none'}
+ for(const r of records){if(!r.label)continue;const mid=(r.path?r.path[Math.floor(r.path.length/2)].clone():uniqueVertices[r.a].clone().add(uniqueVertices[r.b]).multiplyScalar(.5)).project(camera);r.label.style.left=(mid.x*.5+.5)*viewport.clientWidth+'px';r.label.style.top=(-mid.y*.5+.5)*viewport.clientHeight+'px';r.label.style.display=mid.z<1&&mid.z>-1?'block':'none'}
 }
 function nearestHandle(){if(!handlesGroup.visible)return null;const hit=pickRay.intersectObjects(handles,false);return hit.length?hit[0].object.userData.vertex:null}
 function updateDeformedGeometry(){
@@ -265,7 +284,7 @@ renderer.domElement.addEventListener('pointerdown',ev=>{
  if(ev.button!==0)return;
  mouseNDC(ev);
  if(mode==='erase'){
-  const hits=pickRay.intersectObjects(measuringGroup.children,false);
+  const hits=pickRay.intersectObjects(measuringGroup.children,true);
   if(hits.length){const r=hits[0].object.userData.record;const index=records.indexOf(r);if(index>=0){records.splice(index,1);storeUndo(()=>records.splice(Math.min(index,records.length),0,r));refreshMeasurements()};ev.stopImmediatePropagation()}
   return;
  }
@@ -288,8 +307,8 @@ renderer.domElement.addEventListener('pointermove',ev=>{
   if(pickRay.ray.intersectPlane(drag.plane,point)){uniqueVertices[drag.i].copy(point);updateDeformedGeometry()}
   return;
  }
- const hits=mode==='erase'?pickRay.intersectObjects(measuringGroup.children,false):[];
- measuringGroup.children.forEach(m=>{const highlighted=hits.length&&hits[0].object===m;m.scale.x=highlighted?1.3:1;m.scale.z=highlighted?1.3:m.scale.z;m.material.color.setHex(highlighted?0xffe9a6:0x76f2dc)});
+ const hits=pickRay.intersectObjects(measuringGroup.children,true);
+ const hovered=hits.length?hits[0].object.userData.record:null;measuringGroup.children.forEach(g=>g.userData.hovered=g.userData.record===hovered);
  renderer.domElement.style.cursor=hits.length?'pointer':mode==='editVertex'?'crosshair':'auto';
 });
 function stopDrag(){
@@ -329,6 +348,37 @@ function resetVertices(){
 }
 $('resetVertices').onclick=resetVertices;
 $('resetAll').onclick=()=>{$('shape').value='6';$('edge').value='2';$('wire').checked=false;$('vertices').checked=false;$('shader').checked=true;distanceMode='direct';mode='measure';update();reset();$('shader').onchange();refreshTools()};
+// Sampled shortest-path approximation on the triangular surface, not an exact geodesic.
+function surfacePath(a,b){
+ const triangles=[],nodes=uniqueVertices.map(p=>p.clone()),edgeNodes=new Map();
+ function key(i,j){return i<j?i+':'+j:j+':'+i}
+ const pos=solid.geometry.attributes.position;
+ for(let k=0;k<pos.count;k+=3){
+  const ids=[vertexMap[k],vertexMap[k+1],vertexMap[k+2]];
+  if(new Set(ids).size<3)continue;
+  triangles.push(ids);
+  for(const [u,v] of [[ids[0],ids[1]],[ids[1],ids[2]],[ids[2],ids[0]]]){
+   const id=key(u,v);if(edgeNodes.has(id))continue;
+   const points=[u];for(let z=1;z<=4;z++){points.push(nodes.length);nodes.push(uniqueVertices[u].clone().lerp(uniqueVertices[v],z/5))}points.push(v);edgeNodes.set(id,points);
+  }
+ }
+ const adj=nodes.map(()=>new Map());
+ function connect(u,v){if(u===v)return;const d=nodes[u].distanceTo(nodes[v]);if(!adj[u].has(v)||d<adj[u].get(v)){adj[u].set(v,d);adj[v].set(u,d)}}
+ for(const ids of triangles){
+  const candidates=new Set(ids);
+  for(const [u,v] of [[ids[0],ids[1]],[ids[1],ids[2]],[ids[2],ids[0]]])for(const p of edgeNodes.get(key(u,v)))candidates.add(p);
+  const arr=[...candidates];
+  for(let i=0;i<arr.length;i++)for(let j=i+1;j<arr.length;j++)connect(arr[i],arr[j]);
+ }
+ const dist=nodes.map(()=>Infinity),parent=nodes.map(()=>-1),visited=new Set();dist[a]=0;
+ for(let i=0;i<nodes.length;i++){
+  let u=-1,best=Infinity;for(let j=0;j<nodes.length;j++)if(!visited.has(j)&&dist[j]<best){u=j;best=dist[j]}
+  if(u<0||u===b)break;visited.add(u);
+  for(const [v,w] of adj[u])if(dist[u]+w<dist[v]){dist[v]=dist[u]+w;parent[v]=u}
+ }
+ if(!Number.isFinite(dist[b]))return[nodes[a].clone(),nodes[b].clone()];
+ const path=[];for(let i=b;i!==-1;i=parent[i])path.push(nodes[i].clone());return path.reverse();
+}
 refreshTools();$('undo').disabled=true;
 update();
 reset();
