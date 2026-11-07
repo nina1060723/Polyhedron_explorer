@@ -336,18 +336,58 @@ function updateFaceCounts(){
  $('triangleCount').textContent='Triangular faces: '+tri.length;
  $('geometryWarning').textContent=tri.some(x=>x.area<1e-8)?'Degenerate triangle: measurements may be invalid.':'Face count groups connected coplanar triangles.';
 }
+// Restore regular-polyhedron values after the mesh vertices have been updated.
+// Measurements are retained and redrawn by updateDeformedGeometry().
+function restoreRegularProperties(){
+ const n=Number($('shape').value),edgeLength=Number($('edge').value);
+ const [area,volume]=measurements(n,edgeLength);
+ deformed=false;
+ $('faces').textContent=specs[n].f;
+ $('triangleCount').textContent='Triangular faces: '+solid.geometry.attributes.position.count/3;
+ $('area').textContent=area.toFixed(3)+' cm²';
+ $('volume').textContent=volume.toFixed(3)+' cm³';
+ $('geometryWarning').textContent='';
+ showFormulas(n);
+}
 function resetVertices(){
  if(!deformed)return;
- const old=uniqueVertices.map(v=>v.clone()),was=deformed;
- const g=geometryFor(Number($('shape').value)),v=getVertices(g),scale=Number($('edge').value)/calculateEdge(v);
- const fresh=v.map(p=>p.multiplyScalar(scale));g.dispose();
- storeUndo(()=>{uniqueVertices.forEach((p,i)=>p.copy(old[i]));updateDeformedGeometry();deformed=was;showFormulas(Number($('shape').value))});
- uniqueVertices.forEach((p,i)=>p.copy(fresh[i]));updateDeformedGeometry();deformed=false;
- const n=Number($('shape').value),[area,vol]=measurements(n,Number($('edge').value));
- $('area').textContent=area.toFixed(3)+' cm²';$('volume').textContent=vol.toFixed(3)+' cm³';$('faces').textContent=specs[n].f;$('geometryWarning').textContent='';showFormulas(n);
+ const before=uniqueVertices.map(v=>v.clone());
+ const n=Number($('shape').value),edgeLength=Number($('edge').value);
+ const geometry=geometryFor(n),regular=getVertices(geometry);
+ const factor=edgeLength/calculateEdge(regular);
+ const target=regular.map(v=>v.multiplyScalar(factor));
+ geometry.dispose();
+ // The current selected polyhedron and edge length must remain unchanged.
+ if(target.length!==uniqueVertices.length)return;
+ storeUndo(()=>{
+  uniqueVertices.forEach((v,i)=>v.copy(before[i]));
+  updateDeformedGeometry();
+ });
+ uniqueVertices.forEach((v,i)=>v.copy(target[i]));
+ pending=null;
+ updateDeformedGeometry();
+ restoreRegularProperties();
 }
 $('resetVertices').onclick=resetVertices;
-$('resetAll').onclick=()=>{$('shape').value='6';$('edge').value='2';$('wire').checked=false;$('vertices').checked=false;$('shader').checked=true;distanceMode='direct';mode='measure';update();reset();$('shader').onchange();refreshTools()};
+$('resetAll').onclick=()=>{
+ // Keep the currently selected polyhedron and its edge length unchanged.
+ // update() rebuilds the regular geometry and clears measurements, selections
+ // and undo history through onModelRebuilt().
+ if(!Number.isFinite(Number($('edge').value))||Number($('edge').value)<=0||Number($('edge').value)>1e5){
+  $('error').textContent='Enter a valid positive edge length before resetting.';
+  return;
+ }
+ $('wire').checked=false;
+ $('vertices').checked=false;
+ $('shader').checked=true;
+ distanceMode='direct';
+ mode='measure';
+ pending=null;
+ update();
+ reset();
+ $('shader').onchange();
+ refreshTools();
+};
 // Sampled shortest-path approximation on the triangular surface, not an exact geodesic.
 function surfacePath(a,b){
  const triangles=[],nodes=uniqueVertices.map(p=>p.clone()),edgeNodes=new Map();
