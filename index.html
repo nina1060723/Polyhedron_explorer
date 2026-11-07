@@ -29,9 +29,14 @@ aside button:hover{background:#3f6fbc}
 #toolbox,#toolbox-right{position:absolute;z-index:10;display:flex;gap:7px}
 #toolbox{left:12px;top:12px;flex-wrap:wrap;max-width:calc(100% - 24px)}
 #toolbox-right{bottom:13px;right:12px;flex-direction:column}
-#toolbox button,#toolbox-right button{width:38px;height:38px;flex:none;border:1px solid #7c9ac2b0;border-radius:11px;background:#1c3154e5;color:#f2f7ff;font-size:22px;line-height:1;display:grid;place-items:center;backdrop-filter:blur(9px);box-shadow:0 4px 16px #0007;transition:background .16s,transform .16s}
+#toolbox button,#toolbox-right button{min-width:38px;height:38px;flex:none;border:1px solid #7c9ac2b0;border-radius:11px;background:#1c3154e5;color:#f2f7ff;font-size:12px;font-weight:600;line-height:1.1;display:grid;place-items:center;backdrop-filter:blur(9px);box-shadow:0 4px 16px #0007;transition:background .16s,transform .16s;padding:0 11px;white-space:nowrap}
+#toolbox #undo,#toolbox-right button{width:38px;padding:0;font-size:22px}
 #toolbox button:hover,#toolbox-right button:hover{background:#3f6596;transform:translateY(-1px)}
 #toolbox button.active,#toolbox-right button.active{background:#3764b8;border-color:#aad3ff}
+#tool-help{position:absolute;right:12px;top:12px;z-index:9;width:min(226px,calc(100% - 24px));max-height:calc(100% - 140px);overflow:auto;background:#132544de;border:1px solid #7b9bbb83;border-radius:11px;padding:9px 11px;color:#dceaff;font-size:11px;line-height:1.5;box-shadow:0 6px 20px #0006;backdrop-filter:blur(8px)}
+#tool-help summary{cursor:pointer;font-size:12px;font-weight:700;color:#eaf3ff}
+#tool-help p{margin:6px 0 0}
+#tool-help b{color:#a9d7ff}
 #scale-bar{position:absolute;z-index:9;left:14px;bottom:89px;color:#e8f2ff;pointer-events:none;font-size:12px;text-shadow:0 1px 3px #000}
 #scale-label{display:block;margin-bottom:5px}
 #scale-line{height:11px;width:90px;border-left:2px solid #e8f2ff;border-right:2px solid #e8f2ff;border-bottom:2px solid #e8f2ff}
@@ -46,7 +51,8 @@ aside button:hover{background:#3f6fbc}
 .note{font-size:11px;line-height:1.55;color:#a7bbd4;margin-top:19px}
 #error{color:#ffa8a8;font-size:12px;min-height:14px;margin-top:7px}
 @media(max-width:1030px){.layout{grid-template-columns:210px minmax(0,1fr)}aside.right{grid-column:1 / -1;border-top:1px solid #293a55;border-left:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 15px}aside.right h2{grid-column:1/-1}}
-@media(max-width:650px){header{min-height:62px;padding:11px 14px}header h1{font-size:18px}.layout{display:flex;flex-direction:column}aside{overflow:visible}aside.left{order:1;border-right:0;border-top:1px solid #293a55}#viewport{order:0;height:min(62dvh,540px);min-height:330px;flex:none}aside.right{order:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:16px}aside.right h2{grid-column:1/-1}#toolbox{gap:5px}#toolbox button,#toolbox-right button{width:35px;height:35px;font-size:20px}#scale-bar{bottom:91px}#tool-hint{bottom:44px}}
+@media(max-width:850px){#tool-help{top:62px;width:min(226px,calc(100% - 24px));max-height:calc(100% - 177px)}}
+@media(max-width:650px){header{min-height:62px;padding:11px 14px}header h1{font-size:18px}.layout{display:flex;flex-direction:column}aside{overflow:visible}aside.left{order:1;border-right:0;border-top:1px solid #293a55}#viewport{order:0;height:min(62dvh,540px);min-height:330px;flex:none}aside.right{order:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:16px}aside.right h2{grid-column:1/-1}#toolbox{gap:5px}#toolbox button,#toolbox-right button{height:35px;font-size:11px;padding:0 8px}#toolbox #undo,#toolbox-right button{width:35px;padding:0;font-size:20px}#scale-bar{bottom:91px}#tool-hint{bottom:44px}}
 @media(prefers-reduced-motion:reduce){#viewport::before{animation:none}#toolbox button,#toolbox-right button{transition:none}}
 </style>
 </head>
@@ -70,12 +76,18 @@ aside button:hover{background:#3f6fbc}
 <div id="scale-bar"><span id="scale-label">— cm</span><div id="scale-line"></div></div>
 <div id="toolbox">
 <button id="undo" title="Undo" aria-label="Undo">↶</button>
-<button id="measure" title="Measure distance" aria-label="Measure distance">⌁</button>
-<button id="editVertex" title="Edit vertices" aria-label="Edit vertices">◇</button>
-<button id="distanceMode" title="Distance mode: direct" aria-label="Toggle direct or surface distance">↗</button>
+<button id="measure" title="Measure distance" aria-label="Measure distance" aria-pressed="false">Measure</button>
+<button id="editVertex" title="Edit vertices" aria-label="Edit vertices" aria-pressed="false">Edit Vertices</button>
+<button id="distanceMode" title="Distance mode: direct" aria-label="Toggle direct or surface distance" aria-pressed="false">Direct</button>
 </div>
 <div id="toolbox-right"><button id="erase" title="Erase one measurement" aria-label="Erase one measurement">⌫</button><button id="clearLines" title="Clear all measurement lines" aria-label="Clear all measurement lines">⊗</button></div>
-<div id="tool-hint" aria-live="polite">Click two visible vertices to measure a direct distance.</div>
+<details id="tool-help" open><summary>Tool guide</summary>
+<p><b>↶ Undo</b> — Revert the previous edit.</p>
+<p><b>Measure</b> — Show vertices and click two to measure their distance. Click again to exit.</p>
+<p><b>Edit Vertices</b> — Show vertices and drag one to change the shape. Click again to exit.</p>
+<p><b>Direct / Surface</b> — Choose straight-line distance or approximate distance along the surface.</p>
+</details>
+<div id="tool-hint" aria-live="polite">Drag to rotate. Choose Measure or Edit Vertices to show vertex markers.</div>
 <div class="hint">Drag to rotate · Scroll to zoom</div>
 </main>
 <aside class="right">
@@ -123,7 +135,7 @@ const formulas={
 };
 const ray=new THREE.Raycaster(),pickRay=new THREE.Raycaster(),pointer=new THREE.Vector2();
 let solid,edgeLines,uniqueVertices=[],vertexMap=[],originalVertices=[],labels=[],handles=[];
-let mode='measure',distanceMode='direct',pending=null,records=[],history=[],drag=null,deformed=false,edgeLength=2;
+let mode='navigate',distanceMode='direct',pending=null,records=[],history=[],drag=null,deformed=false,edgeLength=2;
 const measuringGroup=new THREE.Group(),handlesGroup=new THREE.Group();
 scene.add(measuringGroup,handlesGroup);
 function formatNumber(x){
@@ -198,6 +210,10 @@ function buildModel(){
   $('error').textContent='Enter a positive edge length up to 100000 cm.';return false;
  }
  $('error').textContent='';edgeLength=candidate;
+ // Clear old indices before calculating measurements on the replacement polyhedron.
+ records=[];pending=null;history=[];drag=null;controls.enabled=true;
+ for(const oldLine of [...measuringGroup.children])disposeObject(oldLine);
+ viewport.querySelectorAll('.distance-label').forEach(node=>node.remove());
  disposeObject(solid);disposeObject(edgeLines);solid=null;edgeLines=null;
  labels.forEach(l=>l.remove());labels=[];
  handles.forEach(h=>disposeObject(h));handles=[];
@@ -221,7 +237,6 @@ function buildModel(){
  $('name').textContent=specs[n].name;$('edges').textContent=specs[n].e;$('points').textContent=specs[n].v;
  deformed=false;
  rebuildGeometry(false);
- records=[];history=[];pending=null;drag=null;controls.enabled=true;
  $('undo').disabled=true;refreshMeasurements();refreshTools();updateMaterial();return true;
 }
 function setRegularStats(){
@@ -334,16 +349,19 @@ function resetAll(){
  const value=$('edge').value.trim(),candidate=Number(value);
  if(!value||!Number.isFinite(candidate)||candidate<=0||candidate>1e5){$('error').textContent='Enter a valid positive edge length before resetting.';return}
  $('wire').checked=false;$('vertices').checked=false;$('shader').checked=true;
- mode='measure';distanceMode='direct';
+ mode='navigate';distanceMode='direct';
  if(buildModel())resetView();
 }
 function showTools(){
- for(const key of ['measure','erase','editVertex'])$(key).classList.toggle('active',key===mode);
+ for(const key of ['measure','erase','editVertex']){
+  const active=key===mode;$(key).classList.toggle('active',active);$(key).setAttribute('aria-pressed',String(active));
+ }
  $('distanceMode').classList.toggle('active',distanceMode==='surface');
- $('distanceMode').textContent=distanceMode==='surface'?'≋':'↗';
+ $('distanceMode').setAttribute('aria-pressed',String(distanceMode==='surface'));
+ $('distanceMode').textContent=distanceMode==='surface'?'Surface':'Direct';
  $('distanceMode').title=distanceMode==='surface'?'Distance: along surface (approximate)':'Distance: direct';
- $('tool-hint').textContent=mode==='editVertex'?'Drag a visible vertex to reshape the model.':mode==='erase'?'Click a measurement line to erase only that measurement.':pending!==null?'Select a second visible vertex.':'Click two visible vertices: '+(distanceMode==='surface'?'approximate surface distance.':'direct distance.');
- handlesGroup.visible=mode!=='erase';
+ $('tool-hint').textContent=mode==='navigate'?'Drag to rotate. Choose Measure or Edit Vertices to show vertex markers.':mode==='editVertex'?'Drag a visible vertex to reshape the model.':mode==='erase'?'Click a measurement line to erase only that measurement.':pending!==null?'Select a second visible vertex.':'Click two visible vertices to measure '+(distanceMode==='surface'?'approximate surface distance.':'direct distance.');
+ handlesGroup.visible=mode==='measure'||mode==='editVertex';
 }
 function refreshTools(){showTools();updateSelection()}
 function updateSelection(){
@@ -355,7 +373,7 @@ function updateSelection(){
   handle.scale.setScalar(marked?1.3:1);
  });
 }
-function setMode(next){mode=next;pending=null;refreshTools()}
+function setMode(next){mode=mode===next?'navigate':next;pending=null;refreshTools()}
 function mouseRay(ev){
  const rect=renderer.domElement.getBoundingClientRect();
  pointer.set((ev.clientX-rect.left)/rect.width*2-1,-(ev.clientY-rect.top)/rect.height*2+1);
@@ -375,7 +393,7 @@ function vertexVisible(i){
  ray.far=Infinity;return !intersections.length;
 }
 function pickVertex(ev){
- if(mode==='erase')return null;
+ if(mode!=='measure'&&mode!=='editVertex')return null;
  const rect=renderer.domElement.getBoundingClientRect(),x=ev.clientX-rect.left,y=ev.clientY-rect.top;
  let best=null,distance=16*16;
  uniqueVertices.forEach((p,i)=>{
